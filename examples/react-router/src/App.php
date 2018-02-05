@@ -6,12 +6,12 @@ use Chenos\ExecJs\Engine;
 
 class App extends Engine
 {
-    protected $name = 'httpServer';
+    protected $v8name = 'httpServer';
 
     public function initialize()
     {
-        $this->setEntryDirectory(__ROOT__)
-            ->addVendorDirectory(__ROOT__.'/node_modules')
+        $this->setEntryDir(__ROOT__)
+            ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride([
                 'react' => 'react/umd/react.development.js',
                 'react-dom' => 'react-dom/umd/react-dom.development.js',
@@ -19,7 +19,7 @@ class App extends Engine
                 'react-router-dom' => 'react-router-dom/umd/react-router-dom.js',
             ]);
 
-        $this->executeString("
+        $this->eval("
             this.process = { env: { NODE_ENV: 'production' } }
             this.global = { process: process }
             var React = require('react')
@@ -37,9 +37,10 @@ class App extends Engine
 
         ob_start();
 
-        $this->executeString("
+        $this->eval("
             var App = require('./build/server.compiled.js').default
-            print(ReactDOMServer.renderToString(React.createElement(App, httpServer.data)))
+            var html = ReactDOMServer.renderToString(React.createElement(App, httpServer.data))
+            print(html)
         ");
 
         return ob_get_clean();

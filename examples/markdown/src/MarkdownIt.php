@@ -8,8 +8,8 @@ class MarkdownIt extends Engine
 {
     public function initialize()
     {
-        $this->setEntryDirectory(__ROOT__)
-            ->addVendorDirectory(__ROOT__.'/node_modules')
+        $this->setEntryDir(__ROOT__)
+            ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('fs', new class {
                 public function readFileSync($file)
                 {
@@ -20,15 +20,14 @@ class MarkdownIt extends Engine
             ;
 
         // test
-        $this->__dirname = __ROOT__;
+        $this->set('__dirname', __ROOT__, true);
 
-        $this->executeString("
-            this.__dirname = PHP.__dirname
+        $this->eval("
             this.console = { log: print }
             var md = require('markdown-it')()
         ");
 
-        $this->parser = $this->executeString('md');
+        $this->parser = $this->eval('md');
     }
 
     public function parseString($text)
@@ -38,6 +37,6 @@ class MarkdownIt extends Engine
 
     public function parseFile($file)
     {
-        return $this->parseString($this->loader->loadModule($file, false));
+        return $this->parseString($this->loadModule($file));
     }
 }

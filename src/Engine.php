@@ -8,23 +8,23 @@ use Chenos\V8Js\ModuleLoader\FileSystemInterface;
 
 class Engine
 {
-    protected $name = 'PHP';
+    protected $v8;
+
+    protected $v8name = 'PHP';
 
     protected $loader;
 
-    protected $v8;
-
     protected $variables = [];
 
-    public function __construct($entryDir = null, $vendorDir = null)
+    public function __construct($v8name = null)
     {
-        $this->loader = new ModuleLoader($entryDir ?: getcwd());
-
-        if (is_string($vendorDir)) {
-            $this->loader->addVendorDirectory($vendorDir);
+        if ($v8name) {
+            $this->v8name = $v8name;
         }
 
-        $this->v8 = new V8Js($this->name);
+        $this->v8 = new V8Js($this->v8name);
+        $this->loader = new ModuleLoader();
+
         $this->v8->setModuleNormaliser([$this->loader, 'normaliseIdentifier']);
         $this->v8->setModuleLoader([$this->loader, 'loadModule']);
 
@@ -38,15 +38,14 @@ class Engine
 
     public function __set($key, $value)
     {
-        if (! in_array($key, $this->variables)) {
-            $this->variables[$key] = true;
-        }
-
-        $this->v8->$key = $value;
+        $this->set($key, $value);
     }
 
     public function __unset($key)
     {
+        if (isset($this->variables[$key]) && $this->variables[$key]) {
+            $this->v8->executeString("delete this.{$key}");
+        }
         unset($this->variables[$key]);
         unset($this->v8->$key);
     }
@@ -72,57 +71,62 @@ class Engine
         return $this;
     }
 
-    public function setEntryDirectory($entryDir)
+    public function setEntryDir($entryDir)
     {
-        $this->loader->setEntryDirectory($entryDir);
+        $this->loader->setEntryDir($entryDir);
 
         return $this;
     }
 
-    public function addVendorDirectory(...$vendorDirs)
+    public function addVendorDir(...$vendorDirs)
     {
-        $this->loader->addVendorDirectory(...$vendorDirs);
+        $this->loader->addVendorDir(...$vendorDirs);
 
         return $this;
     }
 
     public function loadModule($file)
     {
-        return $this->loader->loadModule($file, false);
+        return $this->loader->loadModule($file);
     }
 
-    public function executeScript($script)
+    public function eval($string, $flags = V8Js::FLAG_NONE, $timeLimit = 0, $memoryLimit = 0)
     {
-        return $this->v8->executeScript($script);
+        return $this->v8->executeString($string, '', $flags, $timeLimit, $memoryLimit);
     }
 
-    public function executeString($string)
+    public function fileEval($file)
     {
-        return $this->v8->executeString($string);
+        $string = $this->loadModule($file);
+
+        return $this->eval($string);
     }
 
-    public function executeFile($file)
+    public function require($module, $identifier = null)
     {
-        $string = $this->loader->loadModule($file, false);
-        
-        return $this->executeString($string);
+        if ($identifier) {
+            return $this->eval("var {$identifier} = require('{$module}'); {$identifier}");
+        }
+
+        return $this->eval("require('{$module}')");
     }
 
-    public function compileString($string)
+    public function set($key, $value, $global = false)
     {
-        return $this->v8->compileString($string);
-    }
+        $this->v8->$key = $value;
 
-    public function compileFile($file)
-    {
-        $string = $this->loader->loadModule($file, false);
+        if (! isset($this->variables[$key])) {
+            $this->variables[$key] = $global;
+        }
 
-        return $this->compileString($string);
+        if ($global) {
+            $this->eval("global.$key = {$this->v8name}.$key");
+        }
     }
 
     public function cleanup()
     {
-        foreach ($this->variables as $key => $value) {
+        foreach (array_keys($this->variables) as $key) {
             $this->__unset($key);
         }
 
@@ -134,7 +138,7 @@ class Engine
         return $this->v8;
     }
 
-    public function getModuleLoader()
+    public function getLoader()
     {
         return $this->loader;
     }

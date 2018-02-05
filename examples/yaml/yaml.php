@@ -6,4 +6,4 @@ require __DIR__.'/autoload.php';
 
 $yaml = new Yaml;
 
-$yaml->executeFile('./yaml.js');
+$yaml->require('./yaml.js');

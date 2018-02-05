@@ -8,38 +8,37 @@ class Liquid extends Engine
 {
     public function initialize()
     {
-        $this->setEntryDirectory(__ROOT__)
-            ->addVendorDirectory(__ROOT__.'/node_modules')
+        $this->setEntryDir(__ROOT__)
+            ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('liquidjs', 'liquidjs/liquid.js')
             ->addOverride('resolve-url', function ($root, $path) {
                 return $root.$path;
             })
             ;
 
-        $this->__ROOT__ = __ROOT__;
-
-        $this->XMLHttpRequest = function () {
+        $this->set('__ROOT__', __ROOT__);
+        $this->set('XMLHttpRequest', function () {
             return new XMLHttpRequest();
-        };
+        }, true);
 
-        $this->executeString("
-            this.process = {}
-            this.XMLHttpRequest = PHP.XMLHttpRequest
+        $this->eval("
+            global.process = {}
             var Liquid = require('liquidjs')
             var engine = Liquid({
                 root: PHP.__ROOT__ + '/views',
                 extname: '.html',
             })
         ");
+
+        $this->liquid = $this->eval('engine');
     }
 
     public function render($template, $context = [])
     {
-        $this->template = $template;
-        $this->context = $context;
-
-        $this->executeString("
-            engine.renderFile(PHP.template, PHP.context).then(print);
-        ");
+        $this->liquid
+            ->renderFile($template, $context)
+            ->then(function ($html) {
+                echo $html;
+            });
     }
 }

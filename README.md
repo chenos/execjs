@@ -32,19 +32,18 @@ Access http://127.0.0.1:9999
 ```php
 use Chenos\ExecJs\Engine;
 
-$engine = new Engine(__DIR__.'/entry', __DIR__.'/node_modules');
+$engine = new Engine();
 
 $engine->setExtensions(['.js', '.json']);
 $engine->setEntryDirectory(__DIR__.'/entry');
 $engine->addVendorDirectory(__DIR__.'/node_modules');
 $engine->addOverride('vue', 'vue/dist/vue.runtime.common.js');
 
-$engine->loadModule($file)
-$engine->executeScript($script);
-$engine->executeString($string);
-$engine->executeFile($file);
-$engine->compileString($string);
-$engine->compileFile($file);
+$engine->loadModule($module)
+$engine->eval($string);
+$engine->fileEval($module);
+$engine->require($module, $identifier);
+$engine->set($key, $value, $global);
 ```
 
 Custom Engine
@@ -61,21 +60,17 @@ class Vue extends Engine
             ->addVendorDirectory(__DIR__.'/node_modules')
             ->addOverride('vue', 'vue/dist/vue.runtime.common.js');
 
-        $this->executeString("
+        $this->eval("
             this.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
-            this.global = { process: process }
-            var renderToString = require('./renderToString.js')
         ");
+
+        $this->require('./renderToString.js', 'renderToString');
     }
 
-    public function render($component, callable $callback = null)
+    public function render($component)
     {
-        $this->component = $component;
-        $this->callback = $callback;
-        $this->executeString("
-            var app = require(PHP.component)
-            renderToString(app).then(PHP.callback||print)
-        ");
+        $this->require($component, 'app');
+        $this->eval('renderToString(app).then(print)');
     }
 }
 
@@ -84,14 +79,6 @@ $pool = new Pool();
 $vue = $pool->get(Vue::class);
 
 $vue->render('./hello.js');
-
-// I/O streams
-$handle = fread('php://temp', 'wb');
-$vue->render('./hello.js', function ($html) use ($handle) {
-    fwrite($handle, $html);
-});
-rewind($handle);
-fpassthru($handle);
 
 $pool->dispose($vue);
 ```

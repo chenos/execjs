@@ -6,21 +6,19 @@ use Chenos\ExecJs\Engine;
 
 class App extends Engine
 {
-    protected $name = 'httpServer';
+    protected $v8name = 'httpServer';
 
     public function initialize()
     {
-        $this->loader
-            ->setEntryDirectory(__ROOT__)
-            ->addVendorDirectory(__ROOT__.'/node_modules')
-            // ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
-            // ->addOverride('vue-router', 'vue-router/dist/vue-router.common.js')
+        $this->setEntryDir(__ROOT__)
+            ->addVendorDir(__ROOT__.'/node_modules')
+            ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
+            ->addOverride('vue-router', 'vue-router/dist/vue-router.common.js')
             ;
 
-        $this->executeString("
-            this.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
-            this.global = { process: process }
-            this.console = { log: print }
+        $this->eval("
+            global.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
+            global.console = { log: print }
             var renderToString = require('./js/renderToString.js')
             var createApp = require('./build/server.compiled.js').default
         ");
@@ -36,7 +34,7 @@ class App extends Engine
 
         ob_start();
 
-        $this->executeString("
+        $this->eval("
             createApp(httpServer.data)
                 .then(renderToString)
                 .then(print)

@@ -12,11 +12,13 @@ class EngineTest extends TestCase
     protected $paths = [
         '/app/main.js' => 'var foo',
         '/app/foo.js' => "'foo'",
+        '/app/module.js' => "module.exports = 'module'",
     ];
 
     public function setUp()
     {
-        $this->engine = new Engine('/app');
+        $this->engine = new Engine();
+        $this->engine->setEntryDir('/app');
         $this->engine->setFileSystem(new FileSystem($this->paths));
     }
 
@@ -27,10 +29,76 @@ class EngineTest extends TestCase
 
     public function testModuleLoader()
     {
-        $this->assertInstanceOf(ModuleLoader::class, $this->engine->getModuleLoader());
+        $this->assertInstanceOf(ModuleLoader::class, $this->engine->getLoader());
     }
 
-    public function testVariables()
+    public function testFileSystem()
+    {
+        $this->engine->setFileSystem($filesystem = new FileSystem());
+        $this->assertAttributeEquals($filesystem, 'fs', $this->engine->getLoader());
+    }
+
+    public function testExtensions()
+    {
+        $extensions = ['.js'];
+        $this->engine->setExtensions(...$extensions);
+        $this->assertAttributeEquals($extensions, 'extensions', $this->engine->getLoader());
+    }
+
+    public function testOverride()
+    {
+        $overrides = ['vue' => 'vue/dist/vue.js'];
+        $this->engine->addOverride($overrides);
+        $this->assertAttributeEquals($overrides, 'overrides', $this->engine->getLoader());
+    }
+
+    public function testEntryDir()
+    {
+        $engine = new Engine();
+        $this->assertAttributeEquals(getcwd(), 'entryDir', $engine->getLoader());
+        $this->assertAttributeEquals('/app', 'entryDir', $this->engine->getLoader());
+        $this->engine->setEntryDir(__DIR__);
+        $this->assertAttributeEquals(__DIR__, 'entryDir', $this->engine->getLoader());
+    }
+
+    public function testVendorDir()
+    {
+        $engine = new Engine();
+        $engine->setEntryDir('/app');
+        $engine->addVendorDir('/node_modules');
+        $loader = $engine->getLoader();
+        $this->assertAttributeEquals(['/node_modules'], 'vendorDirs', $loader);
+        $this->engine->addVendorDir(__DIR__);
+        $this->assertAttributeEquals([__DIR__], 'vendorDirs', $this->engine->getLoader());
+    }
+
+    public function testLoadModule()
+    {
+        $this->assertEquals($this->engine->loadModule('/app/main.js'), $this->paths['/app/main.js']);
+        $this->assertEquals($this->engine->loadModule('./main.js'), $this->paths['/app/main.js']);
+    }
+
+    public function testEval()
+    {
+        $engine = new Engine();
+        $this->assertEquals(2, $engine->eval('1+1'));;
+    }
+
+    public function testFileEval()
+    {
+        $str = $this->engine->fileEval('./foo.js');
+        $this->assertEquals('foo', $str);
+    }
+
+    public function testRequire()
+    {
+        $str = $this->engine->require('./module.js');
+        $this->assertEquals('module', $str);
+        $this->engine->require('./module.js', 'str');
+        $this->engine->eval('str');
+    }
+
+    public function testVariables1()
     {
         $obj = new \stdClass();
         $this->engine->foo = $obj;
@@ -43,56 +111,19 @@ class EngineTest extends TestCase
         $this->assertAttributeEquals([], 'variables', $this->engine);
     }
 
-    public function testFileSystem()
+    public function testVariables2()
     {
-        $this->engine->setFileSystem($filesystem = new FileSystem());
-        $this->assertAttributeEquals($filesystem, 'fs', $this->engine->getModuleLoader());
-    }
+        $engine = new Engine('PHPV8');
+        $engine->set('a', 'aaaaa');
+        $this->assertEquals($engine->eval('PHPV8.a'), 'aaaaa');
 
-    public function testExtensions()
-    {
-        $extensions = ['.js'];
-        $this->engine->setExtensions(...$extensions);
-        $this->assertAttributeEquals($extensions, 'extensions', $this->engine->getModuleLoader());
-    }
+        $engine->set('b', 'bbbbb', true);
+        $this->assertEquals($engine->eval('b'), 'bbbbb');
 
-    public function testOverride()
-    {
-        $overrides = ['vue' => 'vue/dist/vue.js'];
-        $this->engine->addOverride($overrides);
-        $this->assertAttributeEquals($overrides, 'overrides', $this->engine->getModuleLoader());
-    }
+        unset($engine->b);
+        $this->assertTrue($engine->eval("typeof b === 'undefined'"));
 
-    public function testEntryDirectory()
-    {
-        $engine = new Engine();
-        $this->assertAttributeEquals(getcwd(), 'entryDir', $engine->getModuleLoader());
-        $this->assertAttributeEquals('/app', 'entryDir', $this->engine->getModuleLoader());
-        $this->engine->setEntryDirectory(__DIR__);
-        $this->assertAttributeEquals(__DIR__, 'entryDir', $this->engine->getModuleLoader());
-    }
-
-    public function testVendorDirectory()
-    {
-        $engine = new Engine('/app', '/node_modules');
-        $loader = $engine->getModuleLoader();
-        $this->assertAttributeEquals(['/node_modules'], 'modulesDirectories', $loader);
-        $this->engine->addVendorDirectory(__DIR__);
-        $this->assertAttributeEquals([__DIR__], 'modulesDirectories', $this->engine->getModuleLoader());
-    }
-
-    public function testLoadModule()
-    {
-        $this->assertEquals($this->engine->loadModule('/app/main.js'), $this->paths['/app/main.js']);
-        $this->assertEquals($this->engine->loadModule('./main.js', false), $this->paths['/app/main.js']);
-    }
-
-    public function testExecute()
-    {
-        $str = $this->engine->executeFile('./foo.js');
-        $this->assertEquals('foo', $str);
-        $compile = $this->engine->compileFile('./foo.js');
-        $str = $this->engine->executeScript($compile);
-        $this->assertEquals('foo', $str);
+        $engine->cleanup();
+        $this->assertTrue($engine->eval("typeof PHPV8.a === 'undefined'"));
     }
 }

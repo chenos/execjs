@@ -11,12 +11,12 @@ class Yaml extends Engine
     public function initialize()
     {
         $this->loader
-            ->setEntryDirectory(__ROOT__)
-            ->addVendorDirectory(__ROOT__.'/node_modules')
+            ->setEntryDir(__ROOT__)
+            ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('js-yaml', 'js-yaml/dist/js-yaml.js')
             ;
 
-        $this->yaml = $this->executeString("var jsyaml = require('js-yaml'); jsyaml");
+        $this->yaml = $this->require('js-yaml', 'jsyaml');
     }
 
     public function load($string)
@@ -26,7 +26,7 @@ class Yaml extends Engine
 
     public function loadFile($file)
     {
-        if ($string = $this->loader->loadModule($file, false)) {
+        if ($string = $this->loadModule($file)) {
             return $this->load($string);
         }
 
@@ -37,6 +37,6 @@ class Yaml extends Engine
     {
         $str = sprintf('jsyaml.dump(%s)', json_encode($array));
 
-        return $this->executeString($str);
+        return $this->eval($str);
     }
 }

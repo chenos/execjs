@@ -5,22 +5,22 @@
 
 ## Performance
 
-Loop 100,000 times
+Loop 100,000 times (symfony/yaml 1000 times)
 
 ```
 docker-compose run --rm php bash -c "time php ./examples/yaml/yaml.php"
 
-real    0m1.111s
-user    0m1.000s
-sys 0m0.070s
+real    0m1.242s
+user    0m1.080s
+sys 0m0.100s
 docker-compose run --rm node bash -c "time node ./examples/yaml/yaml.js"
 
-real    0m1.330s
-user    0m1.260s
-sys 0m0.050s
+real    0m1.572s
+user    0m1.410s
+sys 0m0.130s
 docker-compose run --rm php bash -c "time php ./examples/yaml/symfony.php"
 
-real    0m20.240s
-user    0m20.150s
-sys 0m0.030s
+real    0m1.616s
+user    0m0.310s
+sys 0m1.270s
 ```
