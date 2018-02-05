@@ -1,0 +1,11 @@
+/.env
+vendor
+composer.lock
+composer.phar
+Dockerfile-local
+node_modules
+package-lock.json
+yarn.lock
+clover.xml
+coveralls-upload.json
+build

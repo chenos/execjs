@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+
+  nginx:
+    image: nginx
+    ports:
+      - ${PORT:-9999}:80
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./:/var/www/html
+    depends_on:
+      - php
+    networks:
+      - backend
+
+  php:
+    build:
+      context: ./docker/
+      dockerfile: ${DOCKERFILE:-Dockerfile-71}
+    environment:
+      TRAVIS: ${TRAVIS:-''}
+      TRAVIS_JOB_ID: ${TRAVIS_JOB_ID:-''}
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+    networks:
+      - backend
+
+  node:
+    image: node
+    working_dir: /var/www/html
+    volumes:
+      - ./:/var/www/html
+
+networks:
+  backend:
+    driver: bridge

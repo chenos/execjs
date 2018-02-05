@@ -1,0 +1,10 @@
+language: php
+
+services:
+  - docker
+
+sudo: false
+dist: trusty
+group: deprecated-2017Q4
+
+script: make test
