@@ -102,11 +102,9 @@ class Engine
         return $this->v8->executeString($string, '', $flags, $timeLimit, $memoryLimit);
     }
 
-    public function fileEval($file)
+    public function fileEval($file, int $flags = V8Js::FLAG_NONE, int $timeLimit = 0, int $memoryLimit = 0)
     {
-        $string = $this->loadModule($file);
-
-        return $this->eval($string);
+        return $this->eval($this->loadModule($file), $flags, $timeLimit, $memoryLimit);
     }
 
     public function require($module, $identifier = null)
