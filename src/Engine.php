@@ -28,6 +28,13 @@ class Engine
         $this->v8->setModuleNormaliser([$this->loader, 'normaliseIdentifier']);
         $this->v8->setModuleLoader([$this->loader, 'loadModule']);
 
+        $this->eval("
+            global.requireDefault = function (module) {
+                var obj = require(module); 
+                return obj && obj.__esModule ? obj.default : obj;
+            };
+        ");
+
         $this->initialize();
     }
 
@@ -104,11 +111,22 @@ class Engine
 
     public function require($module, $identifier = null)
     {
-        if ($identifier) {
-            return $this->eval("var {$identifier} = require('{$module}'); {$identifier}");
+        if (is_null($identifier)) {
+            return $this->eval("requireDefault('{$module}')");
         }
 
-        return $this->eval("require('{$module}')");
+        if (is_string($identifier)) {
+            return $this->eval("var $identifier = requireDefault('{$module}'); $identifier");
+        }
+
+        if (is_array($identifier)) {
+            foreach ($identifier as $key => $value) {
+                $this->eval(sprintf('var %s = require(\'%s\').%s;', 
+                    $value, $module, is_string($key) ? $key : $value));
+            }
+        }
+
+        return $this->eval("requireDefault('{$module}')");
     }
 
     public function set($key, $value, $global = false)

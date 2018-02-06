@@ -34,16 +34,16 @@ use Chenos\ExecJs\Engine;
 
 $engine = new Engine();
 
-$engine->setExtensions(['.js', '.json']);
+$engine->setExtensions('.js', '.json');
 $engine->setEntryDirectory(__DIR__.'/entry');
 $engine->addVendorDirectory(__DIR__.'/node_modules');
 $engine->addOverride('vue', 'vue/dist/vue.runtime.common.js');
 
-$engine->loadModule($module)
 $engine->eval($string);
 $engine->fileEval($module);
 $engine->require($module, $identifier);
 $engine->set($key, $value, $global);
+$engine->loadModule($module)
 ```
 
 Custom Engine
@@ -56,13 +56,16 @@ class Vue extends Engine
 {
     protected function initialize()
     {
-        $this->setEntryDirectory(__DIR__)
-            ->addVendorDirectory(__DIR__.'/node_modules')
+        $this->setEntryDir(__DIR__)
+            ->addVendorDir(__DIR__.'/node_modules')
             ->addOverride('vue', 'vue/dist/vue.runtime.common.js');
 
-        $this->eval("
-            this.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
-        ");
+        $this->set('process', [
+            'env' => [
+                'VUE_ENV' => 'server',
+                'NODE_ENV' => 'production',
+            ],
+        ], true);
 
         $this->require('./renderToString.js', 'renderToString');
     }
@@ -75,10 +78,7 @@ class Vue extends Engine
 }
 
 $pool = new Pool();
-
 $vue = $pool->get(Vue::class);
-
 $vue->render('./hello.js');
-
 $pool->dispose($vue);
 ```

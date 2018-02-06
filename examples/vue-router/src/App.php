@@ -16,12 +16,15 @@ class App extends Engine
             ->addOverride('vue-router', 'vue-router/dist/vue-router.common.js')
             ;
 
-        $this->eval("
-            global.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
-            global.console = { log: print }
-            var renderToString = require('./js/renderToString.js')
-            var createApp = require('./build/server.compiled.js').default
-        ");
+        $this->set('process', [
+            'env' => [
+                'VUE_ENV' => 'server',
+                'NODE_ENV' => 'production',
+            ],
+        ], true);
+
+        $this->require('./js/renderToString.js', 'renderToString');
+        $this->require('./build/server.compiled.js', ['default' => 'createApp']);
     }
 
     public function respond($url)
@@ -34,11 +37,7 @@ class App extends Engine
 
         ob_start();
 
-        $this->eval("
-            createApp(httpServer.data)
-                .then(renderToString)
-                .then(print)
-        ");
+        $this->eval('createApp(httpServer.data).then(renderToString).then(print)');
 
         return ob_get_clean();
     }

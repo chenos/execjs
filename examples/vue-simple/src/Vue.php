@@ -6,6 +6,8 @@ use Chenos\ExecJs\Engine;
 
 class Vue extends Engine
 {
+    protected $v8name = 'phpServer';
+
     public function initialize()
     {
         $this->setEntryDir(__ROOT__)
@@ -13,33 +15,37 @@ class Vue extends Engine
             // ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
             ;
 
-        $this->eval("
-            global.process = { env: { VUE_ENV: 'server', NODE_ENV: 'production' } }
-            var Vue = require('vue')
-            var renderToString = require('./js/renderToString.js')
-        ");
+        $this->set('process', [
+            'env' => [
+                'VUE_ENV' => 'server',
+                'NODE_ENV' => 'production',
+            ],
+        ], true);
+
+        $this->require('vue', 'Vue');
+        $this->require('./js/renderToString.js', 'renderToString');
     }
 
-    public function render($component, $propsData = [], callable $callback = null)
+    public function render($component, $propsData = [])
     {
         $this->component = $component;
-        $this->callback = $callback;
         $this->propsData = $propsData;
-
         $this->eval("
-            var component, Component = require(PHP.component)
-            if (Component.__esModule) Component = Component.default
-            switch(typeof Component) {
-                case 'function':
-                    component = new Component({ propsData: PHP.propsData })
-                    break;
-                case 'object':
-                    component = new Vue({
-                        render: h => h(Component, { props: PHP.propsData })
-                    })
-                    break;
+            var component, Component = require(phpServer.component)
+
+            if (Component.__esModule) {
+                Component = Component.default
             }
-            renderToString(component).then(PHP.callback||print).catch(print)
+
+            if(typeof Component === 'function') {
+                component = new Component({ propsData: phpServer.propsData })
+            } else {
+                component = new Vue({
+                    render: h => h(Component, { props: phpServer.propsData })
+                })
+            }
+
+            renderToString(component).then(print).catch(print)
         ");
     }
 }

@@ -19,12 +19,14 @@ class App extends Engine
                 'react-router-dom' => 'react-router-dom/umd/react-router-dom.js',
             ]);
 
-        $this->eval("
-            this.process = { env: { NODE_ENV: 'production' } }
-            this.global = { process: process }
-            var React = require('react')
-            var ReactDOMServer = require('react-dom/server')
-        ");
+        $this->set('process', [
+            'env' => [
+                'NODE_ENV' => 'production',
+            ],
+        ], true);
+
+        $this->require('react', 'React');
+        $this->require('react-dom/server', 'ReactDOMServer');
     }
 
     public function respond($location)
@@ -35,14 +37,8 @@ class App extends Engine
             http_response_code($status);
         }];
 
-        ob_start();
+        $this->require('./build/server.compiled.js', ['default' => 'App']);
 
-        $this->eval("
-            var App = require('./build/server.compiled.js').default
-            var html = ReactDOMServer.renderToString(React.createElement(App, httpServer.data))
-            print(html)
-        ");
-
-        return ob_get_clean();
+        return $this->eval("ReactDOMServer.renderToString(React.createElement(App, httpServer.data))");
     }
 }

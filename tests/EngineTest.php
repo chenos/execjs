@@ -12,7 +12,14 @@ class EngineTest extends TestCase
     protected $paths = [
         '/app/main.js' => 'var foo',
         '/app/foo.js' => "'foo'",
-        '/app/module.js' => "module.exports = 'module'",
+        '/app/module.js' => "
+            module.exports = 'module'
+        ",
+        '/app/es6module.js' => "
+            Object.defineProperty(exports, '__esModule', { value: true })
+            exports.foo = 'foooooo'
+            exports.default = 'default'
+        ",
     ];
 
     public function setUp()
@@ -95,7 +102,10 @@ class EngineTest extends TestCase
         $str = $this->engine->require('./module.js');
         $this->assertEquals('module', $str);
         $this->engine->require('./module.js', 'str');
-        $this->engine->eval('str');
+        $this->assertEquals('module', $this->engine->eval('str'));
+        $this->engine->require('./es6module.js', ['default' => 'bar', 'foo']);
+        $this->assertEquals('default', $this->engine->eval('bar'));
+        $this->assertEquals('foooooo', $this->engine->eval('foo'));
     }
 
     public function testVariables1()
