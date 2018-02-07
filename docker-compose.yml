@@ -19,8 +19,10 @@ services:
       context: ./docker/
       dockerfile: ${DOCKERFILE:-Dockerfile-71}
     environment:
-      TRAVIS: ${TRAVIS:-''}
-      TRAVIS_JOB_ID: ${TRAVIS_JOB_ID:-''}
+      # TRAVIS: ${TRAVIS:-''}
+      # TRAVIS_JOB_ID: ${TRAVIS_JOB_ID:-''}
+      COVERALLS_RUN_LOCALLY: 1
+      COVERALLS_REPO_TOKEN: gfDOr1cMqeqyzMmFgu54HpUcJvsZJf6yV
     working_dir: /var/www/html
     volumes:
       - ./:/var/www/html

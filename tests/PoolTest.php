@@ -3,7 +3,7 @@
 namespace Chenos\ExecJs\Tests;
 
 use Chenos\ExecJs\Pool;
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
 use PHPUnit\Framework\TestCase;
 
 class PoolTest extends TestCase
@@ -12,38 +12,38 @@ class PoolTest extends TestCase
     {
         $workers = [];
         $pool = new Pool();
-        $this->assertEquals(0, $pool->count(Engine::class));
+        $this->assertEquals(0, $pool->count(Context::class));
 
-        $parser1 = $pool->get(Engine::class);
-        $workers[Engine::class][spl_object_hash($parser1)] = $parser1;
-
-        $this->assertAttributeEquals($workers, 'occupiedWorkers', $pool);
-        $this->assertEquals(1, $pool->count(Engine::class));
-
-        $parser2 = $pool->get(Engine::class);
-        $workers[Engine::class][spl_object_hash($parser2)] = $parser2;
+        $context1 = $pool->get(Context::class);
+        $workers[Context::class][spl_object_hash($context1)] = $context1;
 
         $this->assertAttributeEquals($workers, 'occupiedWorkers', $pool);
-        $this->assertEquals(2, $pool->count(Engine::class));
+        $this->assertEquals(1, $pool->count(Context::class));
 
-        $pool->dispose($parser1);
-        $pool->dispose($parser2);
+        $context2 = $pool->get(Context::class);
+        $workers[Context::class][spl_object_hash($context2)] = $context2;
+
+        $this->assertAttributeEquals($workers, 'occupiedWorkers', $pool);
+        $this->assertEquals(2, $pool->count(Context::class));
+
+        $pool->dispose($context1);
+        $pool->dispose($context2);
 
         $this->assertAttributeEquals($workers, 'freeWorkers', $pool);
-        $this->assertEquals(2, $pool->count(Engine::class));
+        $this->assertEquals(2, $pool->count(Context::class));
 
-        $this->assertSame($parser2, $pool->get(Engine::class));
-        $this->assertSame($parser1, $pool->get(Engine::class));
+        $this->assertSame($context2, $pool->get(Context::class));
+        $this->assertSame($context1, $pool->get(Context::class));
     }
 
     public function testVariable()
     {
         $pool = new Pool();
-        $parser1 = $pool->get(Engine::class);
-        $parser1->aa = 'aa';
-        $pool->dispose($parser1);
+        $context1 = $pool->get(Context::class);
+        $context1->aa = 'aa';
+        $pool->dispose($context1);
 
-        $this->assertNull($parser1->aa);
-        $this->assertSame($parser1, $pool->get(Engine::class));
+        $this->assertNull($context1->aa);
+        $this->assertSame($context1, $pool->get(Context::class));
     }
 }

@@ -6,36 +6,26 @@ use V8Js;
 use Chenos\V8Js\ModuleLoader\ModuleLoader;
 use Chenos\V8Js\ModuleLoader\FileSystemInterface;
 
-class Engine
+class Context
 {
     protected $v8;
 
-    protected $v8name = 'PHP';
+    protected $v8name;
 
     protected $loader;
 
     protected $variables = [];
 
-    public function __construct($v8name = null)
+    public function __construct($v8name = 'PHP')
     {
-        if ($v8name) {
-            $this->v8name = $v8name;
-        }
-
-        $this->v8 = new V8Js($this->v8name);
+        $this->v8name = $v8name;
         $this->loader = new ModuleLoader();
+        $this->v8 = new V8Js($v8name);
 
         $this->v8->setModuleNormaliser([$this->loader, 'normaliseIdentifier']);
         $this->v8->setModuleLoader([$this->loader, 'loadModule']);
-
-        $this->eval("
-            global.requireDefault = function (module) {
-                var obj = require(module); 
-                return obj && obj.__esModule ? obj.default : obj;
-            };
-        ");
-
-        $this->initialize();
+        $this->v8->executeString("global.requireDefault = function (m) {
+            var o = require(m);return o && o.__esModule ? o.default : o;};");
     }
 
     public function __get($key)
@@ -51,50 +41,10 @@ class Engine
     public function __unset($key)
     {
         if (isset($this->variables[$key]) && $this->variables[$key]) {
-            $this->v8->executeString("delete this.{$key}");
+            $this->v8->executeString("delete global.{$key}");
         }
         unset($this->variables[$key]);
         unset($this->v8->$key);
-    }
-
-    public function addOverride(...$args)
-    {
-        $this->loader->addOverride(...$args);
-
-        return $this;
-    }
-
-    public function setFileSystem(FileSystemInterface $filesystem)
-    {
-        $this->loader->setFileSystem($filesystem);
-
-        return $this;
-    }
-
-    public function setExtensions(...$extensions)
-    {
-        $this->loader->setExtensions(...$extensions);
-
-        return $this;
-    }
-
-    public function setEntryDir($entryDir)
-    {
-        $this->loader->setEntryDir($entryDir);
-
-        return $this;
-    }
-
-    public function addVendorDir(...$vendorDirs)
-    {
-        $this->loader->addVendorDir(...$vendorDirs);
-
-        return $this;
-    }
-
-    public function loadModule($file)
-    {
-        return $this->loader->loadModule($file);
     }
 
     public function eval($string, $flags = V8Js::FLAG_NONE, $timeLimit = 0, $memoryLimit = 0)
@@ -102,9 +52,9 @@ class Engine
         return $this->v8->executeString($string, '', $flags, $timeLimit, $memoryLimit);
     }
 
-    public function fileEval($file, int $flags = V8Js::FLAG_NONE, int $timeLimit = 0, int $memoryLimit = 0)
+    public function load($file, int $flags = V8Js::FLAG_NONE, int $timeLimit = 0, int $memoryLimit = 0)
     {
-        return $this->eval($this->loadModule($file), $flags, $timeLimit, $memoryLimit);
+        return $this->eval($this->getLoader()->loadModule($file), $flags, $timeLimit, $memoryLimit);
     }
 
     public function require($module, $identifier = null)
@@ -117,14 +67,13 @@ class Engine
             return $this->eval("var $identifier = requireDefault('{$module}'); $identifier");
         }
 
-        if (is_array($identifier)) {
+        if (is_array($identifier) && ! empty($identifier)) {
             foreach ($identifier as $key => $value) {
                 $this->eval(sprintf('var %s = require(\'%s\').%s;', 
                     $value, $module, is_string($key) ? $key : $value));
             }
+            return $this->eval(sprintf('{%s}', implode(', ', $identifier)));
         }
-
-        return $this->eval("requireDefault('{$module}')");
     }
 
     public function set($key, $value, $global = false)
@@ -157,10 +106,5 @@ class Engine
     public function getLoader()
     {
         return $this->loader;
-    }
-
-    protected function initialize()
-    {
-        // initialize
     }
 }
