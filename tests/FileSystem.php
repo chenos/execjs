@@ -2,7 +2,7 @@
 
 namespace Chenos\ExecJs\Tests;
 
-class FileSystem extends \Chenos\V8Js\ModuleLoader\FileSystem
+class FileSystem extends \Chenos\V8JsModuleLoader\FileSystem
 {
     protected $paths = [];
 

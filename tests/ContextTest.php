@@ -5,7 +5,7 @@ namespace Chenos\ExecJs\Tests;
 use V8Js;
 use Chenos\ExecJs\Context;
 use PHPUnit\Framework\TestCase;
-use Chenos\V8Js\ModuleLoader\ModuleLoader;
+use Chenos\V8JsModuleLoader\ModuleLoader;
 
 class ContextTest extends TestCase
 {

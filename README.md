@@ -38,39 +38,27 @@ Access http://127.0.0.1:9999
 
 ```php
 use Chenos\ExecJs\Context;
+use Chenos\V8JsModuleLoader\ModuleLoader;
 
 $context = new Context('PHP');
 
 $context->getLoader()
     ->setEntryDir(__DIR__)
-    ->setExtensions('.js', '.json')
     ->addVendorDir(__DIR__.'/node_modules')
     ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
     ;
+// or
+$loader = new ModuleLoader();
+$loader->setEntryDir(__DIR__)
+    ->addVendorDir(__DIR__.'/node_modules')
+    ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
+    ;
+$context->setLoader($loader);
 
 $context->eval(string $script);
 $context->load(string $module);
 $context->require($module, string|array $identifier);
 $context->set(string $key, mixed $value, $global = false);
-```
-
-Vue Example (incomplete)
-
-```php
-use Chenos\ExecJs\Context;
-
-$context = new Context();
-
-$context->getLoader()
-    ->setEntryDir(__DIR__)
-    ->setExtensions('.js', '.json')
-    ->addVendorDir(__DIR__.'/node_modules')
-    ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
-    ;
-
-$context->require('./renderToString.js', 'renderToString');
-$context->require('./hello.js', 'hello');
-$context->eval("renderToString(hello).then(print)");
 ```
 
 ## API

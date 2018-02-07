@@ -3,8 +3,7 @@
 namespace Chenos\ExecJs;
 
 use V8Js;
-use Chenos\V8Js\ModuleLoader\ModuleLoader;
-use Chenos\V8Js\ModuleLoader\FileSystemInterface;
+use Chenos\V8JsModuleLoader\ModuleLoader;
 
 class Context
 {
