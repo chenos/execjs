@@ -2,35 +2,38 @@
 
 namespace Chenos\ExecJs\VueSimple;
 
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
 
-class Vue extends Engine
+class Vue
 {
-    protected $v8name = 'phpServer';
-
-    public function initialize()
+    public function __construct()
     {
-        $this->setEntryDir(__ROOT__)
+        $context = new Context('phpServer');
+
+        $context->getLoader()
+            ->setEntryDir(__ROOT__)
             ->addVendorDir(__ROOT__.'/node_modules')
             // ->addOverride('vue', 'vue/dist/vue.runtime.common.js')
             ;
 
-        $this->set('process', [
+        $context->set('process', [
             'env' => [
                 'VUE_ENV' => 'server',
                 'NODE_ENV' => 'production',
             ],
         ], true);
 
-        $this->require('vue', 'Vue');
-        $this->require('./js/renderToString.js', 'renderToString');
+        $context->require('vue', 'Vue');
+        $context->require('./js/renderToString.js', 'renderToString');
+
+        $this->context = $context;
     }
 
     public function render($component, $propsData = [])
     {
-        $this->component = $component;
-        $this->propsData = $propsData;
-        $this->eval("
+        $this->context->component = $component;
+        $this->context->propsData = $propsData;
+        $this->context->eval("
             var component, Component = require(phpServer.component)
 
             if (Component.__esModule) {
@@ -47,5 +50,10 @@ class Vue extends Engine
 
             renderToString(component).then(print).catch(print)
         ");
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 }

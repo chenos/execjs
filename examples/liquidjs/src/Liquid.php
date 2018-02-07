@@ -2,13 +2,16 @@
 
 namespace Chenos\ExecJs\Liquid;
 
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
+use Chenos\V8JsModuleLoader\ModuleLoader;
 
-class Liquid extends Engine
+class Liquid
 {
-    public function initialize()
+    public function __construct()
     {
-        $this->setEntryDir(__ROOT__)
+        $loader = new ModuleLoader();
+
+        $loader->setEntryDir(__ROOT__)
             ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('liquidjs', 'liquidjs/liquid.js')
             ->addOverride('resolve-url', function ($root, $path) {
@@ -16,12 +19,14 @@ class Liquid extends Engine
             })
             ;
 
-        $this->set('__ROOT__', __ROOT__);
-        $this->set('XMLHttpRequest', function () {
+        $context = new Context('PHP', $loader);
+
+        $context->set('__ROOT__', __ROOT__);
+        $context->set('XMLHttpRequest', function () {
             return new XMLHttpRequest();
         }, true);
 
-        $this->eval("
+        $context->eval("
             global.process = {}
             var Liquid = require('liquidjs')
             var engine = Liquid({
@@ -30,7 +35,8 @@ class Liquid extends Engine
             })
         ");
 
-        $this->liquid = $this->eval('engine');
+        $this->context = $context;
+        $this->liquid = $context->eval('engine');
     }
 
     public function render($template, $context = [])
@@ -40,5 +46,10 @@ class Liquid extends Engine
             ->then(function ($html) {
                 echo $html;
             });
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 }

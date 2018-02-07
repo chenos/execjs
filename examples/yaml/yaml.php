@@ -6,4 +6,4 @@ require __DIR__.'/autoload.php';
 
 $yaml = new Yaml;
 
-$yaml->require('./yaml.js');
+$yaml->getContext()->require('./yaml.js');

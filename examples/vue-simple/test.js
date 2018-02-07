@@ -16,5 +16,4 @@ async function output() {
     return html
 }
 
-output().then(html => {})
-// output().then(typeof print === 'undefined' ? console.log : print)
+output().then(typeof print === 'undefined' ? console.log : print)

@@ -2,21 +2,22 @@
 
 namespace Chenos\ExecJs\Yaml;
 
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
 
-class Yaml extends Engine
+class Yaml
 {
-    protected $yaml;
-
-    public function initialize()
+    public function __construct()
     {
-        $this->loader
+        $context = new Context('phpServer');
+
+        $context->getLoader()
             ->setEntryDir(__ROOT__)
             ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('js-yaml', 'js-yaml/dist/js-yaml.js')
             ;
 
-        $this->yaml = $this->require('js-yaml', 'jsyaml');
+        $this->context = $context;
+        $this->yaml = $context->require('js-yaml', 'jsyaml');
     }
 
     public function load($string)
@@ -26,7 +27,7 @@ class Yaml extends Engine
 
     public function loadFile($file)
     {
-        if ($string = $this->loadModule($file)) {
+        if ($string = $this->context->getLoader()->loadModule($file)) {
             return $this->load($string);
         }
 
@@ -37,6 +38,11 @@ class Yaml extends Engine
     {
         $str = sprintf('jsyaml.dump(%s)', json_encode($array));
 
-        return $this->eval($str);
+        return $this->context->eval($str);
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 }

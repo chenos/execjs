@@ -6,4 +6,4 @@ require __DIR__.'/autoload.php';
 
 $liquid = new Liquid();
 
-$liquid->fileEval('./liquid.js');
+$liquid->getContext()->load('./liquid.js');

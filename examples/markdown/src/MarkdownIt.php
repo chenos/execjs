@@ -2,13 +2,16 @@
 
 namespace Chenos\ExecJs\Markdown;
 
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
 
-class MarkdownIt extends Engine
+class MarkdownIt
 {
-    public function initialize()
+    public function __construct()
     {
-        $this->setEntryDir(__ROOT__)
+        $context = new Context();
+
+        $context->getLoader()
+            ->setEntryDir(__ROOT__)
             ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('fs', new class {
                 public function readFileSync($file)
@@ -20,14 +23,15 @@ class MarkdownIt extends Engine
             ;
 
         // test
-        $this->set('__dirname', __ROOT__, true);
+        $context->set('__dirname', __ROOT__, true);
 
-        $this->eval("
+        $context->eval("
             this.console = { log: print }
             var md = require('markdown-it')()
         ");
 
-        $this->parser = $this->eval('md');
+        $this->context = $context;
+        $this->parser = $context->eval('md');
     }
 
     public function parseString($text)
@@ -37,6 +41,11 @@ class MarkdownIt extends Engine
 
     public function parseFile($file)
     {
-        return $this->parseString($this->loadModule($file));
+        return $this->parseString($this->context->getLoader()->loadModule($file));
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 }

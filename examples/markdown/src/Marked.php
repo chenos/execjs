@@ -2,27 +2,30 @@
 
 namespace Chenos\ExecJs\Markdown;
 
-use Chenos\ExecJs\Engine;
+use Chenos\ExecJs\Context;
 
-class Marked extends Engine
+class Marked
 {
-    public function initialize()
+    public function __construct()
     {
-        $this->setEntryDir(__ROOT__)
+        $context = new Context();
+
+        $context->getLoader()
+            ->setEntryDir(__ROOT__)
             ->addVendorDir(__ROOT__.'/node_modules')
             ->addOverride('fs', new class {
                 public function readFileSync($file)
                 {
                     return file_get_contents($file);
                 }
-            })
-            // ->addOverride('marked', 'marked/lib/marked.js')
-            ;
+            });
 
         // test
-        $this->set('__dirname', __ROOT__, true);
-        $this->eval('this.console = { log: print }');
-        $this->marked = $this->require('./marked.options.js', 'marked');
+        $context->set('__dirname', __ROOT__, true);
+        $context->eval('this.console = { log: print }');
+
+        $this->context = $context;
+        $this->marked = $context->require('./marked.options.js', 'marked');
     }
 
     public function parseString($text)
@@ -32,6 +35,11 @@ class Marked extends Engine
 
     public function parseFile($file)
     {
-        return $this->parseString($this->loadModule($file));
+        return $this->parseString($this->context->getLoader()->loadModule($file));
+    }
+
+    public function getContext()
+    {
+        return $this->context;
     }
 }
