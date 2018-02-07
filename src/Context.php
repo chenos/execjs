@@ -16,15 +16,12 @@ class Context
 
     protected $variables = [];
 
-    public function __construct($v8name = 'PHP')
+    public function __construct($v8name = 'PHP', ModuleLoader $loader = null)
     {
         $this->v8name = $v8name;
-        $this->loader = new ModuleLoader();
         $this->v8 = new V8Js($v8name);
-
-        $this->v8->setModuleNormaliser([$this->loader, 'normaliseIdentifier']);
-        $this->v8->setModuleLoader([$this->loader, 'loadModule']);
-        $this->v8->executeString("global.requireDefault = function (m) {
+        $this->setLoader($loader ?: new ModuleLoader());
+        $this->eval("global.requireDefault = function (m) {
             var o = require(m);return o && o.__esModule ? o.default : o;};");
     }
 
@@ -59,21 +56,20 @@ class Context
 
     public function require($module, $identifier = null)
     {
-        if (is_null($identifier)) {
-            return $this->eval("requireDefault('{$module}')");
-        }
-
         if (is_string($identifier)) {
             return $this->eval("var $identifier = requireDefault('{$module}'); $identifier");
         }
 
-        if (is_array($identifier) && ! empty($identifier)) {
+        if (is_array($identifier)) {
             foreach ($identifier as $key => $value) {
                 $this->eval(sprintf('var %s = require(\'%s\').%s;', 
                     $value, $module, is_string($key) ? $key : $value));
             }
+     
             return $this->eval(sprintf('{%s}', implode(', ', $identifier)));
         }
+
+        return $this->eval("requireDefault('{$module}')");
     }
 
     public function set($key, $value, $global = false)
@@ -106,5 +102,12 @@ class Context
     public function getLoader()
     {
         return $this->loader;
+    }
+
+    public function setLoader(ModuleLoader $loader)
+    {
+        $this->loader = $loader;
+        $this->v8->setModuleNormaliser([$this->loader, 'normaliseIdentifier']);
+        $this->v8->setModuleLoader([$this->loader, 'loadModule']);
     }
 }
