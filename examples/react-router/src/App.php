@@ -34,15 +34,14 @@ class App
 
     public function respond($location)
     {
-        $this->context->data = ['location' => $location];
+        $this->context->set('req', ['location' => $location]);
+        $this->context->set('res', new Response);
+        $this->context->require('./build/server.compiled.js', ['default' => 'App', 'metaTagsInstance']);
 
-        $this->context->res = ['status' => function ($status) {
-            http_response_code($status);
-        }];
+        $main = $this->context->eval("ReactDOMServer.renderToString(React.createElement(App, {location: httpServer.req.location}))");
+        $meta = $this->context->eval('metaTagsInstance.renderToString()');
 
-        $this->context->require('./build/server.compiled.js', ['default' => 'App']);
-
-        return $this->context->eval("ReactDOMServer.renderToString(React.createElement(App, httpServer.data))");
+        return ['meta' => $meta, 'main' => $main];
     }
 
     public function getContext()

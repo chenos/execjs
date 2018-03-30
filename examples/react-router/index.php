@@ -5,17 +5,17 @@ use Chenos\ExecJs\ReactRouter\App;
 require __DIR__.'/autoload.php';
 
 $app = new App();
-$html = $app->respond($_SERVER['REQUEST_URI']);
+$data = $app->respond($_SERVER['REQUEST_URI']);
 
 echo <<<HTML
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Document</title>
+    {$data['meta']}
 </head>
 <body>
-    <div id="app">{$html}</div>
+    <div id="app">{$data['main']}</div>
     <script src="build/client.compiled.js"></script>
 </body>
 </html>

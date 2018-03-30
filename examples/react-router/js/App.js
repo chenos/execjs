@@ -1,12 +1,23 @@
 import React from 'react'
 import { Link, Route, Switch } from 'react-router-dom'
+import MetaTags from 'react-meta-tags';
 
 const Home = () => (
-  <h1>Home Page</h1>
+  <div className="page">
+    <MetaTags>
+      <title>React Meta Tags | Home</title>
+    </MetaTags>
+    <h1>Home Page</h1>
+  </div>
 )
 
 const About = () => (
-  <h1>About Page</h1>
+  <div className="page">
+    <MetaTags>
+      <title>React Meta Tags | About Us</title>
+    </MetaTags>
+    <h1>About Page</h1>
+  </div>
 )
 
 const NotFound = () => {
@@ -15,7 +26,12 @@ const NotFound = () => {
   }
 
   return (
-    <h1>Not Found</h1>
+    <div className="page">
+      <MetaTags>
+        <title>React Meta Tags | Not Found</title>
+      </MetaTags>
+      <h1>Not Found</h1>
+    </div>
   )
 }
 
